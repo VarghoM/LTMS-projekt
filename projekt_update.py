@@ -102,13 +102,6 @@ def select_platform(name_part):
             return p
     return platforms[0] # Kui ei leia, võta esimene
 
-# Panna draw = True, et graafikuid teeks
-def select_platform(name_part):
-    platforms = cl.get_platforms()
-    for p in platforms:
-        if name_part.lower() in p.name.lower():
-            return p
-    return platforms[0] # Kui ei leia, võta esimene
 
 # Panna draw = True, et graafikuid teeks
 def sim_Euler(tht_host, ptht_host, r_host, pfii_host, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps, draw = True):
