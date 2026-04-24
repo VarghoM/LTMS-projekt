@@ -142,7 +142,7 @@ def sim_Euler(tht_host, ptht_host, r_host, pfii_host, Blocksize, Outstep, Step, 
         os.makedirs(folder, exist_ok = True)
 
         fig, ax = plt.subplots(figsize=(10, 10))
-        sc = ax.scatter(np.zeros(Number), np.zeros(Number), c = r_host, cmap = "viridis", s=20, alpha=0.8)
+        sc = ax.scatter(np.zeros(Number), np.zeros(Number), c = r_host, cmap = "viridis", s=20, alpha=0.8) # viridis asemel turbo
         cbar = plt.colorbar(sc, ax=ax)
         cbar.set_label('Osakese raadius $r$')
         ax.set_xlabel(r'$\theta$')
