@@ -104,7 +104,7 @@ def select_platform(name_part):
 
 
 # Panna draw = True, et graafikuid teeks
-def sim_Euler(tht_host, ptht_host, r_host, pfii_host, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps, draw = True):
+def sim_Euler(tht_host, ptht_host, r_host, pfii_host, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps, draw = False):
     time_start = time.time()
     print('Euler')
 
