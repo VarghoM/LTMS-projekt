@@ -132,7 +132,7 @@ int N)
 
     clDataInFii[gid] += dt * ( p_fii / (r * r) );
 
-    clDataInT[gid] += dt * ( (p_r*p_r) / a   +  (p_fii * p_fii) / (r * r) );
+    clDataInT[gid] += dt * ( (p_r*p_r) / a   +  (p_fii * p_fii) / (r * r) ) * ( (L * sqrt(a)) * 0.5 );
 
 }
 
@@ -185,9 +185,10 @@ def sim_Euler(arr, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps,
     tht_arr = []
     ptht_arr = []
 
+
     # loob keskkonna graafikute joonistamiseks
     if draw == True:
-        m = "fii"
+        m = "r"
         if m == "tht":
             i = 0
             folder = "kaadrid_Euler" + str(int(time.time()))
@@ -195,13 +196,29 @@ def sim_Euler(arr, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps,
 
             fig, ax = plt.subplots(figsize=(10, 10))
             sc = ax.scatter(np.zeros(Number), np.zeros(Number), c = r_host, cmap = "jet", s=20, alpha=0.8) # viridis asemel turbo
-            sc.set_clim(vmin=0, vmax=100)
+            sc.set_clim(vmin=0, vmax=10)
             cbar = plt.colorbar(sc, ax=ax)
             cbar.set_label('Osakese raadius $r$')
             ax.set_xlabel(r'$\theta$')
             ax.set_ylabel(r'$p_\theta$')
             ax.set_xlim(-2*np.pi, 2*np.pi)
             ax.set_ylim(-10, 10)
+            info_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
+        
+        elif m == "r":
+            i = 0
+            folder = "kaadrid_Euler" + str(int(time.time()))
+            os.makedirs(folder, exist_ok = True)
+
+            fig, ax = plt.subplots(figsize=(10, 10))
+            sc = ax.scatter(np.zeros(Number), np.zeros(Number), c = pfii_host, cmap = "jet", s=20, alpha=0.8) # viridis asemel turbo
+            sc.set_clim(vmin=0, vmax=100)
+            cbar = plt.colorbar(sc, ax=ax)
+            cbar.set_label(r'Osakese pöördimpulss $p_\phi$')
+            ax.set_xlabel(r'$r$')
+            ax.set_ylabel(r'$p_r$')
+            ax.set_xlim(0, 100)
+            ax.set_ylim(0, 4)
             info_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
         
         elif m == "fii":
@@ -214,20 +231,28 @@ def sim_Euler(arr, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps,
             sc.set_clim(vmin=0, vmax=5)
             cbar = plt.colorbar(sc, ax=ax)
             cbar.set_label(r'$\theta$')
-            ax.set_xlabel(r'$\fii')
+            ax.set_xlabel(r'$\fii$')
             ax.set_ylabel('$r$')
             ax.set_xlim(-2*np.pi, 2*np.pi)
             ax.set_ylim(0, 100)
             info_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, fontsize=10, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))  
 
+
+
+
     try:
         while not finish:
+
+
 
             if draw == True and n % Outstep == 0:
                 if m == "tht":
                     cl.enqueue_copy(queue, tht_host, tht_dev)
                     cl.enqueue_copy(queue, ptht_host, ptht_dev)
                     cl.enqueue_copy(queue, r_host, r_dev)
+                    cl.enqueue_copy(queue, fii_host, fii_dev)
+                    cl.enqueue_copy(queue, pr_host, pr_dev)
+                    cl.enqueue_copy(queue, pfii_host, pfii_dev)
 
                     sc.set_offsets(np.c_[tht_host.copy(), ptht_host.copy()])
                     sc.set_array(r_host.copy())
@@ -236,6 +261,36 @@ def sim_Euler(arr, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps,
                         f't = {Step * n:.2f} s\n'
                         f'N = {Number}\n'
                         f'r = [{r_host.min():.1f} ... {r_host.max():.1f}]\n'
+                        f'$p_r$ = [{pr_host.min():.1f} ... {pr_host.max():.1f}]'
+                        fr'$\phi$ = [{fii_host.min():.1f} ... {fii_host.max():.1f}]\n'
+                        fr'$p_\phi$ = [{pfii_host.min():.1f} ... {pfii_host.max():.1f}]'
+                    )
+                    info_text.set_text(textbox)
+
+                    f = f"graph_{i:04d}.png"
+                    path = os.path.join(folder, f)
+                    plt.savefig(path, dpi = 150, bbox_inches='tight')
+
+                    i += 1
+
+                elif m == "r":
+                    cl.enqueue_copy(queue, tht_host, tht_dev)
+                    cl.enqueue_copy(queue, ptht_host, ptht_dev)
+                    cl.enqueue_copy(queue, r_host, r_dev)
+                    cl.enqueue_copy(queue, fii_host, fii_dev)
+                    cl.enqueue_copy(queue, pr_host, pr_dev)
+                    cl.enqueue_copy(queue, pfii_host, pfii_dev)
+
+
+                    sc.set_offsets(np.c_[r_host.copy(), pr_host.copy()])
+                    #sc.set_array(pfii_host.copy())
+
+                    textbox = (
+                        f't = {Step * n:.2f} s\n'
+                        f'N = {Number}\n'
+                        fr'$\theta$ = [{tht_host.min():.1f} ... {tht_host.max():.1f}]\n'
+                        fr'$p_\theta$ = [{ptht_host.min():.1f} ... {ptht_host.max():.1f}]'
+                        fr'$\phi$ = [{fii_host.min():.1f} ... {fii_host.max():.1f}]\n'
                         fr'$p_\phi$ = [{pfii_host.min():.1f} ... {pfii_host.max():.1f}]'
                     )
                     info_text.set_text(textbox)
@@ -268,8 +323,11 @@ def sim_Euler(arr, Blocksize, Outstep, Step, Number, ctx, queue, prg, max_steps,
 
                     i += 1
 
+
+
+
             # arvutused kernelis
-            knl_euler(queue, gws, lws, tht_dev, ptht_dev, r_dev, pr_dev, fii_dev, pfii_dev, t_dev, np.int32(r_s), np.int32(1), Step, np.int32(Number))
+            knl_euler(queue, gws, lws, tht_dev, ptht_dev, r_dev, pr_dev, fii_dev, pfii_dev, t_dev, np.int32(r_s), np.int32(0), Step, np.int32(Number))
 
             n += 1
 
@@ -385,7 +443,7 @@ if __name__ == "__main__":
   
 
     # Osakeste arv
-    Number = 5
+    Number = 50
     # Nurga algväärtus
     Tht = np.pi/2+0.5
     # Impulsi algväärtus
@@ -406,19 +464,19 @@ if __name__ == "__main__":
     r_host = np.linspace(5, 50, Number, dtype=np.float32)
     # nullid või väike vahemik 0 ümber
     #pr_host = np.zeros(Number, dtype=np.float32)
-    pr_host = np.flip(np.linspace(0.2, 0.4, Number, dtype=np.float32))
+    pr_host = np.flip(np.linspace(2, 4, Number, dtype=np.float32))
     pr_host = pr_host.copy()
 
     # polaarnurk
     tht_host = np.full(Number, Tht, dtype=np.float32)
     #ptht_host = np.full(Number, Ptht, dtype=np.float32)
     #tht_host = np.linspace(Tht-0.5, Tht+0.5, Number, dtype=np.float32)
-    ptht_host = np.linspace(-5, 5, Number, dtype=np.float32)
+    #ptht_host = np.linspace(-5, 5, Number, dtype=np.float32)
     ptht_host = ((np.random.rand(Number)*2 - 1) / np.sqrt(r_host)).astype(np.float32)
 
     # asimuudi nurk
-    fii_host = np.linspace(-0.1, 0.1, Number, dtype=np.float32)
-    pfii_host = np.linspace(0.3, 0.8, Number, dtype=np.float32)
+    fii_host = np.linspace(0.1, 2, Number, dtype=np.float32)
+    pfii_host = np.linspace(1.3, 1.8, Number, dtype=np.float32)
 
     # aeg
     t_host = np.zeros(Number, dtype=np.float32)
